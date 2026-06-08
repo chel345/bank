@@ -1,0 +1,27 @@
+server:
+  port: 8081
+
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/atmdb
+    username: atmuser
+    password: atmpass
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  
+  kafka:
+    bootstrap-servers: kafka:9092
+    consumer:
+      group-id: atm-service
+      enable-auto-commit: false
+      auto-offset-reset: earliest
+    listener:
+      ack-mode: manual
+
+logging:
+  level:
+    com.example.atm: DEBUG

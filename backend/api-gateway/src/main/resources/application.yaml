@@ -1,0 +1,30 @@
+server:
+  port: 8087
+
+jwt:
+  secret: your-256-bit-secret-key-change-in-production-2024
+
+manager:
+  secret:
+    key: ${MANAGER_SECRET_KEY:super-secret-manager-key-2024}
+
+spring:
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+services:
+  atm:
+    url: http://atm-service:8081
+  branch:
+    url: http://branch-service:8082
+  order:
+    url: http://order-service:8083
+  card:
+    url: http://card-service:8084
+  client:
+    url: http://client-service:8085
+  account:
+    url: http://account-service:8086

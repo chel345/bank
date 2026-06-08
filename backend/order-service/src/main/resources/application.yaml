@@ -1,0 +1,64 @@
+server:
+  port: ${SERVER_PORT:8083}
+
+spring:
+  application:
+    name: order-service
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres-order:5432/orderdb}
+    username: ${SPRING_DATASOURCE_USERNAME:bankuser}
+    password: ${SPRING_DATASOURCE_PASSWORD:bankpass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 30000
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:kafka:9092}
+    consumer:
+      group-id: order-service-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      max-poll-records: 50
+      heartbeat-interval: 3000
+      session-timeout: 45000
+    listener:
+      ack-mode: manual
+      concurrency: 3
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+
+manager:
+  secret:
+    key: ${MANAGER_SECRET_KEY:super-secret-manager-key-2024}
+
+logging:
+  level:
+    root: INFO
+    com.bank.order: DEBUG
+    org.springframework.kafka: INFO
+    org.hibernate.SQL: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
