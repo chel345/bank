@@ -1,0 +1,41 @@
+Полная таблица всех эндпоинтов API Gateway
+Метод	URL	Назначение	JWT	Manager Key
+Auth				
+POST	/api/auth/login	Вход (телефон + пароль)	❌	❌
+POST	/api/auth/register	Регистрация клиента	❌	✅
+Clients				
+POST	/api/clients	Создать клиента	✅	✅
+GET	/api/clients/{id}	Получить клиента	✅	❌
+GET	/api/clients/by-phone/{phone}	Найти по телефону	✅	❌
+PUT	/api/clients/{id}	Обновить клиента	✅	❌*
+DELETE	/api/clients/{id}	Удалить клиента	✅	✅
+Legal Entities				
+POST	/api/legal-entities	Создать юрлицо	✅	✅
+GET	/api/legal-entities/by-client/{id}	Юрлица клиента (пагинация)	✅	❌
+GET	/api/legal-entities/{id}	Юрлицо по ID	✅	❌
+PUT	/api/legal-entities/{id}	Обновить юрлицо	✅	❌*
+DELETE	/api/legal-entities/{id}	Удалить юрлицо	✅	✅
+POST	/api/legal-entities/link	Связать клиента с юрлицом	✅	✅
+DELETE	/api/legal-entities/link	Разорвать связь	✅	✅
+Accounts				
+POST	/api/accounts/personal	Создать личный счёт	✅	✅
+POST	/api/accounts/business	Создать счёт юрлица	✅	✅
+GET	/api/accounts/personal/owner/{id}	Счета клиента	✅	❌
+GET	/api/accounts/business/owner/{id}	Счета юрлица	✅	❌
+DELETE	/api/accounts/personal/{id}	Закрыть личный счёт	✅	✅
+DELETE	/api/accounts/business/{id}	Закрыть счёт юрлица	✅	✅
+POST	/api/transactions	Транзакция	✅	✅
+ATM				
+GET	/api/atms	Все банкоматы (пагинация)	✅	❌
+GET	/api/atms/{id}	Банкомат по ID	✅	❌
+GET	/api/atms/city/{city}	Банкоматы в городе (пагинация)	✅	❌
+Branches				
+GET	/api/branches/city/{city}	Отделения в городе (пагинация)	✅	❌
+GET	/api/branches/{id}	Отделение по ID	✅	❌
+Orders				
+GET	/api/orders/customer/{id}	Заказы клиента (пагинация)	✅	❌
+GET	/api/orders/{id}	Заказ по ID	✅	❌
+Cards				
+GET	/api/cards/account/{id}	Карты счёта (пагинация)	✅	❌
+GET	/api/cards/{id}	Карта по ID	✅	❌
+*Для PUT-запросов: пользователь может менять свои данные без Manager Key. Менеджер может менять паспортные данные/ИНН с Manager Key.

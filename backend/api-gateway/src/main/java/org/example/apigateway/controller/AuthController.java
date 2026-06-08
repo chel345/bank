@@ -1,14 +1,12 @@
 package org.example.apigateway.controller;
 
-import org.example.apigateway.dto.LoginRequest;
-import org.example.apigateway.dto.RegisterRequest;
-import org.example.apigateway.dto.TokenResponse;
+import org.example.apigateway.dto.*;
 import org.example.apigateway.service.AuthService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
+import reactor.core.publisher.Mono;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -20,18 +18,30 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @GetMapping("/health")
-    public ResponseEntity<Map<String, String>> health() {
-        return ResponseEntity.ok(Map.of("status", "API Gateway is running"));
-    }
-
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public Mono<ResponseEntity<?>> login(@Valid @RequestBody LoginRequest request) {
+        return authService.login(request)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .onErrorResume(e -> Mono.just(
+                        ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                .body(new ErrorResponse(401, "Unauthorized", e.getMessage()))
+                ));
     }
 
     @PostMapping("/register")
-    public ResponseEntity<TokenResponse> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(authService.register(request));
+    public Mono<ResponseEntity<?>> register(
+            @Valid @RequestBody RegisterRequest request,
+            @RequestHeader("X-Manager-Key") String managerKey) {
+        return authService.register(request, managerKey)
+                .<ResponseEntity<?>>map(ResponseEntity::ok)
+                .onErrorResume(e -> Mono.just(
+                        ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                                .body(new ErrorResponse(400, "Bad Request", e.getMessage()))
+                ));
+    }
+
+    @GetMapping("/health")
+    public ResponseEntity<String> health() {
+        return ResponseEntity.ok("OK");
     }
 }

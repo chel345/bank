@@ -139,6 +139,28 @@ public class AccountService {
         businessAccountRepository.save(to);
     }
 
+    // Зачисление на личный счёт
+    @Transactional
+    public void depositToPersonalAccount(Long accountId, BigDecimal amount, String managerKey) {
+        if (!managerSecretKey.equals(managerKey)) {
+            throw new SecurityException("Only manager can perform transfers");
+        }
+
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Amount must be positive");
+        }
+
+        PersonalAccount account = personalAccountRepository.findById(accountId)
+                .orElseThrow(() -> new RuntimeException("Personal account not found: " + accountId));
+
+        if (!account.isActive()) {
+            throw new RuntimeException("Account is closed");
+        }
+
+        account.setBalance(account.getBalance().add(amount));
+        personalAccountRepository.save(account);
+    }
+
     // Получение счетов клиента
     public java.util.List<PersonalAccount> getPersonalAccountsByOwner(Long ownerId) {
         return personalAccountRepository.findByOwnerIdAndIsActiveTrue(ownerId);

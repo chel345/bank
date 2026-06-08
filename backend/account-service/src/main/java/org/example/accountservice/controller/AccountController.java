@@ -59,6 +59,20 @@ public class AccountController {
         return ResponseEntity.ok(Map.of("status", "closed"));
     }
 
+    // Зачисление на личный счёт
+    @PostMapping("/personal/{id}/deposit")
+    public ResponseEntity<Map<String, String>> depositToPersonalAccount(
+            @PathVariable Long id,
+            @RequestParam BigDecimal amount,
+            @RequestHeader("X-Manager-Key") String managerKey) {
+        accountService.depositToPersonalAccount(id, amount, managerKey);
+        return ResponseEntity.ok(Map.of(
+                "status", "deposit completed",
+                "accountId", id.toString(),
+                "amount", amount.toString()
+        ));
+    }
+
     // Транзакция между личными счетами
     @PostMapping("/transfer/personal")
     public ResponseEntity<Map<String, String>> transferPersonal(

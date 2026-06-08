@@ -1,50 +1,30 @@
 {
   "info": {
-    "_postman_id": "bank-api-gateway-complete",
-    "name": "Bank System API Gateway (Complete)",
-    "description": "Полная коллекция всех эндпоинтов API Gateway.\n\nВсе операции (REST + Kafka) проходят через Gateway.\nJWT токен сохраняется автоматически после Login/Register.",
+    "name": "Bank System API Gateway",
+    "description": "Полная коллекция эндпоинтов банковской системы через API Gateway (порт 8080). JWT токен сохраняется автоматически после логина. Все эндпоинты /me используют ID из JWT.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
-      "key": "base_url",
-      "value": "http://localhost:8087",
-      "type": "string"
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "managerKey",
+      "value": "super-secret-manager-key-2024"
     },
     {
       "key": "token",
-      "value": "",
-      "type": "string"
-    },
-    {
-      "key": "manager_key",
-      "value": "super-secret-manager-key-2024",
-      "type": "string"
-    },
-    {
-      "key": "client_id",
-      "value": "",
-      "type": "string"
+      "value": ""
     }
   ],
   "item": [
     {
-      "name": "🔐 Auth",
+      "name": "1. Auth",
+      "description": "Аутентификация и регистрация. JWT токен сохраняется автоматически.",
       "item": [
         {
-          "name": "Health Check",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/auth/health",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "health"]
-            }
-          }
-        },
-        {
-          "name": "Login",
+          "name": "Login (получить JWT)",
           "event": [
             {
               "listen": "test",
@@ -52,616 +32,733 @@
                 "exec": [
                   "if (pm.response.code === 200) {",
                   "    var jsonData = pm.response.json();",
-                  "    pm.collectionVariables.set('token', jsonData.token);",
-                  "    pm.collectionVariables.set('client_id', jsonData.clientId.toString());",
-                  "    console.log('✅ Token saved. Client ID: ' + jsonData.clientId);",
+                  "    pm.collectionVariables.set(\"token\", jsonData.token);",
+                  "    console.log(\"Токен сохранён: \" + jsonData.token.substring(0, 50) + \"...\");",
+                  "} else {",
+                  "    console.log(\"Ошибка логина: \" + pm.response.text());",
                   "}"
-                ],
-                "type": "text/javascript"
+                ]
               }
             }
           ],
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n    \"phone\": \"+79001234567\",\n    \"password\": \"pass123\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/api/auth/login",
-              "host": ["{{base_url}}"],
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
               "path": ["api", "auth", "login"]
-            }
-          }
-        },
-        {
-          "name": "Register",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 200 || pm.response.code === 201) {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.collectionVariables.set('token', jsonData.token);",
-                  "    pm.collectionVariables.set('client_id', jsonData.clientId.toString());",
-                  "    console.log('✅ Registered. Client ID: ' + jsonData.clientId);",
-                  "}"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"email\": \"newuser@bank.ru\",\n    \"password\": \"pass123\",\n    \"phone\": \"+79009999999\",\n    \"passportData\": \"4510 999999\",\n    \"managerKey\": \"{{manager_key}}\"\n}"
             },
-            "url": {
-              "raw": "{{base_url}}/api/auth/register",
-              "host": ["{{base_url}}"],
-              "path": ["api", "auth", "register"]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "name": "🏧 ATM Service",
-      "item": [
-        {
-          "name": "GET Банкоматы в городе",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/api/atms/city/Москва?page=0&size=10",
-              "host": ["{{base_url}}"],
-              "path": ["api", "atms", "city", "Москва"],
-              "query": [{"key": "page", "value": "0"}, {"key": "size", "value": "10"}]
-            }
+            "description": "Вход по телефону и паролю. Возвращает JWT токен с ID пользователя."
           }
         },
         {
-          "name": "GET Банкомат по ID",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/atms/1", "host": ["{{base_url}}"], "path": ["api", "atms", "1"]}
-          }
-        },
-        {
-          "name": "POST Создать банкомат (Kafka)",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"address\": \"ул. Новая, 10\",\n    \"city\": \"Москва\"\n}"
-            },
-            "url": {"raw": "{{base_url}}/api/atms", "host": ["{{base_url}}"], "path": ["api", "atms"]}
-          }
-        },
-        {
-          "name": "PUT Обновить банкомат (Kafka)",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"address\": \"ул. Обновленная, 20\",\n    \"city\": \"Москва\"\n}"
-            },
-            "url": {"raw": "{{base_url}}/api/atms/1", "host": ["{{base_url}}"], "path": ["api", "atms", "1"]}
-          }
-        },
-        {
-          "name": "DELETE Удалить банкомат (Kafka)",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "DELETE",
-            "url": {"raw": "{{base_url}}/api/atms/1", "host": ["{{base_url}}"], "path": ["api", "atms", "1"]}
-          }
-        }
-      ]
-    },
-    {
-      "name": "🏢 Branch Service",
-      "item": [
-        {
-          "name": "GET Отделения в городе",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/api/branches/city/Москва?page=0&size=10",
-              "host": ["{{base_url}}"],
-              "path": ["api", "branches", "city", "Москва"],
-              "query": [{"key": "page", "value": "0"}, {"key": "size", "value": "10"}]
-            }
-          }
-        },
-        {
-          "name": "GET Отделение по ID",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/branches/1", "host": ["{{base_url}}"], "path": ["api", "branches", "1"]}
-          }
-        },
-        {
-          "name": "POST Создать отделение (Kafka)",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "X-Manager-Key", "value": "{{manager_key}}"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"address\": \"ул. Ленина, 10\",\n    \"city\": \"Москва\",\n    \"phone\": \"+74951234567\",\n    \"email\": \"branch1@bank.ru\",\n    \"workingHours\": \"09:00-18:00\"\n}"
-            },
-            "url": {"raw": "{{base_url}}/api/branches", "host": ["{{base_url}}"], "path": ["api", "branches"]}
-          }
-        },
-        {
-          "name": "PUT Обновить отделение (Kafka)",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "PUT",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "X-Manager-Key", "value": "{{manager_key}}"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"phone\": \"+74959999999\",\n    \"workingHours\": \"10:00-19:00\"\n}"
-            },
-            "url": {"raw": "{{base_url}}/api/branches/1", "host": ["{{base_url}}"], "path": ["api", "branches", "1"]}
-          }
-        },
-        {
-          "name": "DELETE Удалить отделение (Kafka)",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "DELETE",
-            "header": [{"key": "X-Manager-Key", "value": "{{manager_key}}"}],
-            "url": {"raw": "{{base_url}}/api/branches/1", "host": ["{{base_url}}"], "path": ["api", "branches", "1"]}
-          }
-        }
-      ]
-    },
-    {
-      "name": "📋 Order Service",
-      "item": [
-        {
-          "name": "GET Мои заказы",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/api/orders?page=0&size=10",
-              "host": ["{{base_url}}"],
-              "path": ["api", "orders"],
-              "query": [{"key": "page", "value": "0"}, {"key": "size", "value": "10"}]
-            }
-          }
-        },
-        {
-          "name": "GET Заказ по ID",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/orders/1", "host": ["{{base_url}}"], "path": ["api", "orders", "1"]}
-          }
-        },
-        {
-          "name": "POST Создать заказ (Kafka)",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "X-Manager-Key", "value": "{{manager_key}}"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"date\": \"2026-06-08\",\n    \"branchId\": 1\n}"
-            },
-            "url": {"raw": "{{base_url}}/api/orders", "host": ["{{base_url}}"], "path": ["api", "orders"]}
-          }
-        },
-        {
-          "name": "PUT Обновить заказ (Kafka)",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "PUT",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "X-Manager-Key", "value": "{{manager_key}}"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"branchId\": 2\n}"
-            },
-            "url": {"raw": "{{base_url}}/api/orders/1", "host": ["{{base_url}}"], "path": ["api", "orders", "1"]}
-          }
-        },
-        {
-          "name": "DELETE Удалить заказ (Kafka)",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "DELETE",
-            "header": [{"key": "X-Manager-Key", "value": "{{manager_key}}"}],
-            "url": {"raw": "{{base_url}}/api/orders/1", "host": ["{{base_url}}"], "path": ["api", "orders", "1"]}
-          }
-        }
-      ]
-    },
-    {
-      "name": "💳 Card Service",
-      "item": [
-        {
-          "name": "GET Мои карты",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/api/cards?page=0&size=10",
-              "host": ["{{base_url}}"],
-              "path": ["api", "cards"],
-              "query": [{"key": "page", "value": "0"}, {"key": "size", "value": "10"}]
-            }
-          }
-        },
-        {
-          "name": "GET Карта по ID",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/cards/1", "host": ["{{base_url}}"], "path": ["api", "cards", "1"]}
-          }
-        },
-        {
-          "name": "POST Создать карту (Kafka)",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "X-Manager-Key", "value": "{{manager_key}}"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"accountId\": 1,\n    \"cardNumber\": \"4276123456789012\"\n}"
-            },
-            "url": {"raw": "{{base_url}}/api/cards", "host": ["{{base_url}}"], "path": ["api", "cards"]}
-          }
-        },
-        {
-          "name": "PUT Обновить карту (Kafka)",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "PUT",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "X-Manager-Key", "value": "{{manager_key}}"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"cardNumber\": \"4276987654321098\"\n}"
-            },
-            "url": {"raw": "{{base_url}}/api/cards/1", "host": ["{{base_url}}"], "path": ["api", "cards", "1"]}
-          }
-        },
-        {
-          "name": "DELETE Удалить карту (Kafka)",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "DELETE",
-            "header": [{"key": "X-Manager-Key", "value": "{{manager_key}}"}],
-            "url": {"raw": "{{base_url}}/api/cards/1", "host": ["{{base_url}}"], "path": ["api", "cards", "1"]}
-          }
-        }
-      ]
-    },
-    {
-      "name": "👤 Client Service",
-      "item": [
-        {
-          "name": "GET Мой профиль",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/profile", "host": ["{{base_url}}"], "path": ["api", "profile"]}
-          }
-        },
-        {
-          "name": "PUT Обновить мой профиль",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"phone\": \"+79009999999\",\n    \"email\": \"updated@mail.ru\"\n}"
-            },
-            "url": {"raw": "{{base_url}}/api/profile", "host": ["{{base_url}}"], "path": ["api", "profile"]}
-          }
-        },
-        {
-          "name": "PUT Обновить клиента (Manager)",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "PUT",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "X-Manager-Key", "value": "{{manager_key}}"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"passportData\": \"4510 111111\"\n}"
-            },
-            "url": {"raw": "{{base_url}}/api/clients/1", "host": ["{{base_url}}"], "path": ["api", "clients", "1"]}
-          }
-        },
-        {
-          "name": "DELETE Удалить клиента (Manager)",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "DELETE",
-            "header": [{"key": "X-Manager-Key", "value": "{{manager_key}}"}],
-            "url": {"raw": "{{base_url}}/api/clients/2", "host": ["{{base_url}}"], "path": ["api", "clients", "2"]}
-          }
-        }
-      ]
-    },
-    {
-      "name": "🏛️ Legal Entities",
-      "item": [
-        {
-          "name": "GET Мои юрлица",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/api/legal-entities?page=0&size=10",
-              "host": ["{{base_url}}"],
-              "path": ["api", "legal-entities"],
-              "query": [{"key": "page", "value": "0"}, {"key": "size", "value": "10"}]
-            }
-          }
-        },
-        {
-          "name": "GET Юрлицо по ID",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/legal-entities/1", "host": ["{{base_url}}"], "path": ["api", "legal-entities", "1"]}
-          }
-        },
-        {
-          "name": "POST Создать юрлицо",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "X-Manager-Key", "value": "{{manager_key}}"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"organizationName\": \"ООО Ромашка\",\n    \"address\": \"ул. Цветочная, 1\",\n    \"phone\": \"+74951112233\",\n    \"inn\": \"7701123456\"\n}"
-            },
-            "url": {"raw": "{{base_url}}/api/legal-entities", "host": ["{{base_url}}"], "path": ["api", "legal-entities"]}
-          }
-        },
-        {
-          "name": "PUT Обновить юрлицо",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"phone\": \"+74950000000\",\n    \"address\": \"ул. Новая, 10\"\n}"
-            },
-            "url": {"raw": "{{base_url}}/api/legal-entities/1", "host": ["{{base_url}}"], "path": ["api", "legal-entities", "1"]}
-          }
-        }
-      ]
-    },
-    {
-      "name": "💰 Account Service",
-      "item": [
-        {
-          "name": "GET Мои личные счета",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/accounts/personal", "host": ["{{base_url}}"], "path": ["api", "accounts", "personal"]}
-          }
-        },
-        {
-          "name": "GET Мои счета юрлиц",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/accounts/business", "host": ["{{base_url}}"], "path": ["api", "accounts", "business"]}
-          }
-        },
-        {
-          "name": "POST Создать личный счёт",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "X-Manager-Key", "value": "{{manager_key}}"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"currency\": \"RUB\"\n}"
-            },
-            "url": {"raw": "{{base_url}}/api/accounts/personal", "host": ["{{base_url}}"], "path": ["api", "accounts", "personal"]}
-          }
-        },
-        {
-          "name": "DELETE Закрыть счёт",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "DELETE",
-            "header": [{"key": "X-Manager-Key", "value": "{{manager_key}}"}],
-            "url": {"raw": "{{base_url}}/api/accounts/personal/1", "host": ["{{base_url}}"], "path": ["api", "accounts", "personal", "1"]}
-          }
-        }
-      ]
-    },
-    {
-      "name": "🔄 Transfer",
-      "item": [
-        {
-          "name": "POST Перевод между личными счетами",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "X-Manager-Key", "value": "{{manager_key}}"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"fromAccountId\": 1,\n    \"toAccountId\": 2,\n    \"amount\": 5000.00,\n    \"accountType\": \"personal\"\n}"
-            },
-            "url": {"raw": "{{base_url}}/api/transfer", "host": ["{{base_url}}"], "path": ["api", "transfer"]}
-          }
-        },
-        {
-          "name": "POST Перевод между счетами юрлиц",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "X-Manager-Key", "value": "{{manager_key}}"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"fromAccountId\": 3,\n    \"toAccountId\": 4,\n    \"amount\": 100000.00,\n    \"accountType\": \"business\"\n}"
-            },
-            "url": {"raw": "{{base_url}}/api/transfer", "host": ["{{base_url}}"], "path": ["api", "transfer"]}
-          }
-        }
-      ]
-    },
-    {
-      "name": "🧪 Full Test Flow (10 шагов)",
-      "item": [
-        {
-          "name": "1️⃣ Health Check",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {"raw": "{{base_url}}/api/auth/health", "host": ["{{base_url}}"], "path": ["api", "auth", "health"]}
-          }
-        },
-        {
-          "name": "2️⃣ Login",
+          "name": "Register (новый клиент)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "if (pm.response.code === 200) {",
-                  "    var d = pm.response.json();",
-                  "    pm.collectionVariables.set('token', d.token);",
-                  "    pm.collectionVariables.set('client_id', d.clientId.toString());",
-                  "    console.log('✅ Logged in. Client: ' + d.clientId);",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"token\", jsonData.token);",
+                  "    console.log(\"Токен сохранён: \" + jsonData.token.substring(0, 50) + \"...\");",
                   "}"
-                ],
-                "type": "text/javascript"
+                ]
               }
             }
           ],
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"phone\":\"+79001234567\",\"password\":\"pass123\"}"},
-            "url": {"raw": "{{base_url}}/api/auth/login", "host": ["{{base_url}}"], "path": ["api", "auth", "login"]}
-          }
-        },
-        {
-          "name": "3️⃣ Мой профиль",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/profile", "host": ["{{base_url}}"], "path": ["api", "profile"]}
-          }
-        },
-        {
-          "name": "4️⃣ Мои заказы",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/orders?page=0&size=5", "host": ["{{base_url}}"], "path": ["api", "orders"], "query": [{"key": "page", "value": "0"}, {"key": "size", "value": "5"}]}
-          }
-        },
-        {
-          "name": "5️⃣ Мои карты",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/cards?page=0&size=5", "host": ["{{base_url}}"], "path": ["api", "cards"], "query": [{"key": "page", "value": "0"}, {"key": "size", "value": "5"}]}
-          }
-        },
-        {
-          "name": "6️⃣ Мои юрлица",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/legal-entities?page=0&size=5", "host": ["{{base_url}}"], "path": ["api", "legal-entities"], "query": [{"key": "page", "value": "0"}, {"key": "size", "value": "5"}]}
-          }
-        },
-        {
-          "name": "7️⃣ Мои счета",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/accounts/personal", "host": ["{{base_url}}"], "path": ["api", "accounts", "personal"]}
-          }
-        },
-        {
-          "name": "8️⃣ Банкоматы в Москве",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/atms/city/Москва?page=0&size=5", "host": ["{{base_url}}"], "path": ["api", "atms", "city", "Москва"], "query": [{"key": "page", "value": "0"}, {"key": "size", "value": "5"}]}
-          }
-        },
-        {
-          "name": "9️⃣ Отделения в Москве",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "GET",
-            "url": {"raw": "{{base_url}}/api/branches/city/Москва?page=0&size=5", "host": ["{{base_url}}"], "path": ["api", "branches", "city", "Москва"], "query": [{"key": "page", "value": "0"}, {"key": "size", "value": "5"}]}
-          }
-        },
-        {
-          "name": "🔟 Перевод средств",
-          "request": {
-            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{token}}", "type": "string"}]},
-            "method": "POST",
             "header": [
               {"key": "Content-Type", "value": "application/json"},
-              {"key": "X-Manager-Key", "value": "{{manager_key}}"}
+              {"key": "X-Manager-Key", "value": "{{managerKey}}"}
             ],
-            "body": {"mode": "raw", "raw": "{\"fromAccountId\":1,\"toAccountId\":2,\"amount\":15000.00,\"accountType\":\"personal\"}"},
-            "url": {"raw": "{{base_url}}/api/transfer", "host": ["{{base_url}}"], "path": ["api", "transfer"]}
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"phone\": \"+79009999999\",\n    \"email\": \"newclient@mail.ru\",\n    \"password\": \"password123\",\n    \"passportData\": \"4510 111222\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Регистрация нового клиента. Требуется ключ менеджера. Возвращает JWT токен."
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Clients - Мой профиль (/me)",
+      "description": "Операции с СВОИМ профилем. ID берётся из JWT токена.",
+      "item": [
+        {
+          "name": "Получить МОЙ профиль",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clients", "me"]
+            },
+            "description": "Получение данных ТЕКУЩЕГО пользователя. ID берётся из JWT."
+          }
+        },
+        {
+          "name": "Обновить МОЙ профиль",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"phone\": \"+79007777777\",\n    \"email\": \"mynewemail@mail.ru\",\n    \"password\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clients", "me"]
+            },
+            "description": "Обновление СВОЕГО профиля. Можно менять телефон, почту и пароль."
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Clients - Управление (менеджер)",
+      "description": "Операции с клиентами для менеджера.",
+      "item": [
+        {
+          "name": "Создать клиента",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "X-Manager-Key", "value": "{{managerKey}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"email\": \"ivanov@mail.ru\",\n    \"password\": \"securepass\",\n    \"phone\": \"+79001234567\",\n    \"passportData\": \"4510 123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clients",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clients"]
+            },
+            "description": "Создание клиента (только менеджер)."
+          }
+        },
+        {
+          "name": "Получить клиента по ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clients", "1"]
+            },
+            "description": "Получение данных ЛЮБОГО клиента по ID (для менеджера)."
+          }
+        },
+        {
+          "name": "Найти клиента по телефону",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/by-phone/+79001234567",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clients", "by-phone", "+79001234567"]
+            },
+            "description": "Поиск клиента по номеру телефона."
+          }
+        },
+        {
+          "name": "Обновить паспорт клиента (менеджер)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "X-Manager-Key", "value": "{{managerKey}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"passportData\": \"4510 999999\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clients", "1"]
+            },
+            "description": "Только менеджер может менять паспортные данные."
+          }
+        },
+        {
+          "name": "Удалить клиента",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "X-Manager-Key", "value": "{{managerKey}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/clients/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "clients", "1"]
+            },
+            "description": "Удаление клиента (только менеджер)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Legal Entities - Мои юрлица (/me)",
+      "description": "Операции с СВОИМИ юрлицами. ID клиента из JWT.",
+      "item": [
+        {
+          "name": "Получить МОИ юрлица",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/legal-entities/me?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "legal-entities", "me"],
+              "query": [
+                {"key": "page", "value": "0"},
+                {"key": "size", "value": "10"}
+              ]
+            },
+            "description": "Получение всех юрлиц, связанных с ТЕКУЩИМ пользователем."
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Legal Entities - Управление (менеджер)",
+      "description": "CRUD операции с юрлицами и связями для менеджера.",
+      "item": [
+        {
+          "name": "Создать юрлицо",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "X-Manager-Key", "value": "{{managerKey}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"organizationName\": \"ООО Ромашка\",\n    \"address\": \"ул. Цветочная, д. 1\",\n    \"phone\": \"+74951112233\",\n    \"inn\": \"7701123456\",\n    \"clientId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/legal-entities",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "legal-entities"]
+            },
+            "description": "Создание юрлица (только менеджер)."
+          }
+        },
+        {
+          "name": "Получить юрлица клиента по ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/legal-entities/by-client/1?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "legal-entities", "by-client", "1"],
+              "query": [
+                {"key": "page", "value": "0"},
+                {"key": "size", "value": "10"}
+              ]
+            },
+            "description": "Получение юрлиц ЛЮБОГО клиента по ID."
+          }
+        },
+        {
+          "name": "Получить юрлицо по ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/legal-entities/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "legal-entities", "1"]
+            },
+            "description": "Получение юрлица по ID."
+          }
+        },
+        {
+          "name": "Обновить ИНН юрлица (менеджер)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "X-Manager-Key", "value": "{{managerKey}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"inn\": \"7701999999\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/legal-entities/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "legal-entities", "1"]
+            },
+            "description": "Только менеджер может менять ИНН."
+          }
+        },
+        {
+          "name": "Удалить юрлицо",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "X-Manager-Key", "value": "{{managerKey}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/legal-entities/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "legal-entities", "1"]
+            },
+            "description": "Удаление юрлица (только менеджер)."
+          }
+        },
+        {
+          "name": "Связать клиента с юрлицом",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "X-Manager-Key", "value": "{{managerKey}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/legal-entities/link?clientId=1&legalEntityId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "legal-entities", "link"],
+              "query": [
+                {"key": "clientId", "value": "1"},
+                {"key": "legalEntityId", "value": "1"}
+              ]
+            },
+            "description": "Связать клиента с юрлицом (только менеджер)."
+          }
+        },
+        {
+          "name": "Разорвать связь клиента с юрлицом",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "X-Manager-Key", "value": "{{managerKey}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/legal-entities/link?clientId=1&legalEntityId=1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "legal-entities", "link"],
+              "query": [
+                {"key": "clientId", "value": "1"},
+                {"key": "legalEntityId", "value": "1"}
+              ]
+            },
+            "description": "Разорвать связь клиента с юрлицом (только менеджер)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Accounts - Мои счета (/me)",
+      "description": "Просмотр СВОИХ счетов. ID из JWT.",
+      "item": [
+        {
+          "name": "Получить МОИ счета",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "me"]
+            },
+            "description": "Получение всех счетов ТЕКУЩЕГО пользователя."
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Accounts - Управление (менеджер)",
+      "description": "Управление счетами (только менеджер).",
+      "item": [
+        {
+          "name": "Зачислить на личный счёт",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "X-Manager-Key", "value": "{{managerKey}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/personal/1/deposit?amount=5000.00",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "personal", "1", "deposit"],
+              "query": [{"key": "amount", "value": "5000.00"}]
+            },
+            "description": "Зачисление средств на личный счёт (только менеджер)."
+          }
+        },
+        {
+          "name": "Создать личный счёт",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "X-Manager-Key", "value": "{{managerKey}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/personal?ownerId=1&currency=RUB",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "personal"],
+              "query": [
+                {"key": "ownerId", "value": "1"},
+                {"key": "currency", "value": "RUB"}
+              ]
+            },
+            "description": "Создание личного счёта (только менеджер)."
+          }
+        },
+        {
+          "name": "Создать счёт юрлица",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "X-Manager-Key", "value": "{{managerKey}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/business?ownerId=1&currency=RUB",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "business"],
+              "query": [
+                {"key": "ownerId", "value": "1"},
+                {"key": "currency", "value": "RUB"}
+              ]
+            },
+            "description": "Создание счёта юрлица (только менеджер)."
+          }
+        },
+        {
+          "name": "Получить счета владельца",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/personal/owner/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "personal", "owner", "1"]
+            },
+            "description": "Получение счетов ЛЮБОГО владельца."
+          }
+        },
+        {
+          "name": "Получить счета юрлица",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/business/owner/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "business", "owner", "1"]
+            },
+            "description": "Получение счетов юрлица."
+          }
+        },
+        {
+          "name": "Закрыть личный счёт",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "X-Manager-Key", "value": "{{managerKey}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/personal/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "personal", "1"]
+            },
+            "description": "Закрытие личного счёта (только менеджер)."
+          }
+        },
+        {
+          "name": "Закрыть счёт юрлица",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "X-Manager-Key", "value": "{{managerKey}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/business/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "business", "1"]
+            },
+            "description": "Закрытие счёта юрлица (только менеджер)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Transactions (Транзакции)",
+      "description": "Перевод средств между счетами (только менеджер).",
+      "item": [
+        {
+          "name": "Транзакция между личными счетами",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "X-Manager-Key", "value": "{{managerKey}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"fromAccountId\": 1,\n    \"toAccountId\": 2,\n    \"amount\": 5000.00,\n    \"accountType\": \"personal\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"]
+            },
+            "description": "Перевод между личными счетами."
+          }
+        },
+        {
+          "name": "Транзакция между счетами юрлиц",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"},
+              {"key": "X-Manager-Key", "value": "{{managerKey}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"fromAccountId\": 3,\n    \"toAccountId\": 4,\n    \"amount\": 10000.00,\n    \"accountType\": \"business\",\n    \"legalEntityId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"]
+            },
+            "description": "Перевод между счетами юрлиц с проверкой связи."
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. ATM (Банкоматы)",
+      "description": "Просмотр банкоматов.",
+      "item": [
+        {
+          "name": "Банкоматы в городе",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/atms/city/Москва?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "atms", "city", "Москва"],
+              "query": [
+                {"key": "page", "value": "0"},
+                {"key": "size", "value": "10"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Банкомат по ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/atms/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "atms", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Branches (Отделения)",
+      "description": "Просмотр отделений.",
+      "item": [
+        {
+          "name": "Отделения в городе",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/branches/city/Москва?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "branches", "city", "Москва"],
+              "query": [
+                {"key": "page", "value": "0"},
+                {"key": "size", "value": "10"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Отделение по ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/branches/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "branches", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Orders - Мои заказы (/me)",
+      "description": "Просмотр СВОИХ заказов. ID из JWT.",
+      "item": [
+        {
+          "name": "Получить МОИ заказы",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/me?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "me"],
+              "query": [
+                {"key": "page", "value": "0"},
+                {"key": "size", "value": "10"}
+              ]
+            },
+            "description": "Получение заказов ТЕКУЩЕГО пользователя."
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. Orders - Просмотр",
+      "description": "Просмотр заказов.",
+      "item": [
+        {
+          "name": "Заказы клиента по ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/customer/1?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "customer", "1"],
+              "query": [
+                {"key": "page", "value": "0"},
+                {"key": "size", "value": "10"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Заказ по ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/orders/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "orders", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Cards (Карты)",
+      "description": "Просмотр карт.",
+      "item": [
+        {
+          "name": "Карты счёта",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cards/by-account/100?page=0&size=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cards", "by-account", "100"],
+              "query": [
+                {"key": "page", "value": "0"},
+                {"key": "size", "value": "10"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Карта по ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/cards/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "cards", "1"]
+            }
           }
         }
       ]

@@ -5,6 +5,9 @@ import jakarta.validation.constraints.NotBlank;
 
 public class RegisterRequest {
 
+    @NotBlank
+    private String phone;
+
     @Email
     @NotBlank
     private String email;
@@ -12,13 +15,10 @@ public class RegisterRequest {
     @NotBlank
     private String password;
 
-    @NotBlank
-    private String phone;
-
     private String passportData;
 
-    @NotBlank
-    private String managerKey;
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
@@ -26,12 +26,6 @@ public class RegisterRequest {
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
 
-    public String getPhone() { return phone; }
-    public void setPhone(String phone) { this.phone = phone; }
-
     public String getPassportData() { return passportData; }
     public void setPassportData(String passportData) { this.passportData = passportData; }
-
-    public String getManagerKey() { return managerKey; }
-    public void setManagerKey(String managerKey) { this.managerKey = managerKey; }
 }
